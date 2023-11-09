@@ -133,7 +133,10 @@ No modules.
 
 ## Outputs
 
-No outputs.
+| Name | Description |
+|------|-------------|
+| group\_id | the ID of the identity store group |
+| permission\_set\_arn | the ARN of the permission set |
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
 
 ## Developer Setup
