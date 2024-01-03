@@ -19,7 +19,7 @@ data "aws_caller_identity" "current" {}
 data "aws_ssoadmin_instances" "this" {}
 
 variable "another_account_id" {
-  description = "ID of another account within the organization
+  description = "ID of another account within the organization"
   type        = string
   default     = "000000000000"
 }
