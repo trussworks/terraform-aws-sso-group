@@ -6,6 +6,11 @@ This module provisions AWS IAM Identity Center (formerly AWS Single Sign-On) res
 - A Permission Set with options for inline, AWS-managed, and customer-managed policy attachments to attach to the group
 - Account assignments provisioning the permission set in each specified account
 
+If using a different IPD, such as AWS Managed AD, there are several resources
+that should not be created via this module. Set `managed_ad = true` in the
+variables in order to not have this module create groups or attempt to attach
+policies to those groups.
+
 ## Prerequisites
 
 - In order to use AWS IAM Identity Center, your account must be managed by AWS Organizations.
