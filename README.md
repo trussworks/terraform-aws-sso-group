@@ -6,6 +6,11 @@ This module provisions AWS IAM Identity Center (formerly AWS Single Sign-On) res
 - A Permission Set with options for inline, AWS-managed, and customer-managed policy attachments to attach to the group
 - Account assignments provisioning the permission set in each specified account
 
+If using a different IPD, such as AWS Managed AD, there are several resources
+that should not be created via this module. Set `managed_ad = true` in the
+variables in order to not have this module create groups or attempt to attach
+policies to those groups.
+
 ## Prerequisites
 
 - In order to use AWS IAM Identity Center, your account must be managed by AWS Organizations.
@@ -123,19 +128,19 @@ No modules.
 | accounts | List of accounts in which the permission set is to be provisioned | `list(string)` | n/a | yes |
 | group\_description | Description of the user group | `string` | `"N/A"` | no |
 | group\_name | The display name of the group being created | `string` | n/a | yes |
+| managed\_ad | Boolean set to true if using AWS Managed Active Directory | `bool` | `false` | no |
 | permission\_set\_description | Description of the permission set | `string` | `"N/A"` | no |
 | permission\_set\_name | Name of the permission set | `string` | n/a | yes |
 | policy\_aws\_managed | List of ARNs of policies to attach to permission set | `list(string)` | `[]` | no |
 | policy\_customer\_managed\_name | Name of the policy to attach to permission set | `string` | `""` | no |
 | policy\_customer\_managed\_path | Path of the policy to attach to permission set | `string` | `"/"` | no |
 | policy\_inline | Inline policy in JSON format to attach to permission set | `string` | `""` | no |
-| users | List of users to add to group | `map(string)` | n/a | yes |
+| users | List of users to add to group | `map(string)` | `{}` | no |
 
 ## Outputs
 
 | Name | Description |
 |------|-------------|
-| group\_id | the ID of the identity store group |
 | permission\_set\_arn | the ARN of the permission set |
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
 
