@@ -4,9 +4,20 @@ data "aws_ssoadmin_instances" "this" {}
 
 # Identity Store Group
 resource "aws_identitystore_group" "this" {
+  count = var.managed_ad ? 0 : 1
+
   display_name      = var.group_name
   description       = var.group_description
   identity_store_id = tolist(data.aws_ssoadmin_instances.this.identity_store_ids)[0]
+}
+
+# Attach Identity Store Users to Group
+resource "aws_identitystore_group_membership" "this" {
+  count = var.managed_ad ? 0 : length(var.users)
+
+  identity_store_id = tolist(data.aws_ssoadmin_instances.this.identity_store_ids)[0]
+  group_id          = var.managed_ad ? null : element(aws_identitystore_group.this[*].group_id, 0)
+  member_id         = var.managed_ad ? null : var.users[count.index]
 }
 
 # Permission set
@@ -46,26 +57,14 @@ resource "aws_ssoadmin_permission_set_inline_policy" "this" {
   permission_set_arn = aws_ssoadmin_permission_set.this.arn
 }
 
-# Attach Identity Store Users to Group
-resource "aws_identitystore_group_membership" "this" {
-  for_each = var.users
-
-  identity_store_id = tolist(data.aws_ssoadmin_instances.this.identity_store_ids)[0]
-  group_id          = aws_identitystore_group.this.group_id
-  member_id         = each.value
-}
-
 # Assign Accounts in which the Group can use its permission set
 resource "aws_ssoadmin_account_assignment" "this" {
-  for_each = toset(var.accounts)
+  count = var.managed_ad ? 0 : length(var.accounts)
 
-  instance_arn = tolist(data.aws_ssoadmin_instances.this.arns)[0]
-
-  permission_set_arn = aws_ssoadmin_permission_set.this.arn
-
-  principal_id   = aws_identitystore_group.this.group_id
-  principal_type = "GROUP"
-
-  target_id   = each.key
-  target_type = "AWS_ACCOUNT"
+  instance_arn       = var.managed_ad ? null : tolist(data.aws_ssoadmin_instances.this.arns)[0]
+  permission_set_arn = var.managed_ad ? null : aws_ssoadmin_permission_set.this.arn
+  principal_id       = var.managed_ad ? null : element(aws_identitystore_group.this[*].group_id, 0)
+  principal_type     = var.managed_ad ? null : "GROUP"
+  target_id          = var.managed_ad ? null : var.accounts[count.index]
+  target_type        = var.managed_ad ? null : "AWS_ACCOUNT"
 }
