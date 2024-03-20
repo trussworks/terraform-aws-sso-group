@@ -49,14 +49,7 @@ variable "policy_inline" {
   default     = ""
 }
 
-variable "managed_ad" {
-  description = "Boolean set to true if using AWS Managed Active Directory"
-  type        = bool
-  default     = false
-}
-
 variable "users" {
   description = "List of users to add to group"
   type        = map(string)
-  default     = {}
 }
