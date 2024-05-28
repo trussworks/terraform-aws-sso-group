@@ -3,6 +3,7 @@
 This module provisions AWS IAM Identity Center (formerly AWS Single Sign-On) resources:
 
 - An Identity Store group and group memberships for each user that is specified (the module does not provision users for you)
+  - Alternatively, you may supply your own pre-existing Identity Store group. This is especially useful if you make use of an external IdP such as Okta. In this case, set `create_group = false` but still provide the group_name. You should also omit users to avoid drift from the IdP.
 - A Permission Set with options for inline, AWS-managed, and customer-managed policy attachments to attach to the group
 - Account assignments provisioning the permission set in each specified account
 
@@ -12,6 +13,8 @@ This module provisions AWS IAM Identity Center (formerly AWS Single Sign-On) res
 - At the time of this writing (2023-11-09), you must manually click the Enable button in the AWS IAM Identity Center web console to create an instance in your account
 
 ## Usage
+
+### Example where you wish to provision users and groups
 
 ```hcl
 data "aws_caller_identity" "current" {}
@@ -84,6 +87,31 @@ module "sso_group" {
 }
 ```
 
+### Example where an external IdP + SCIM handles users and groups
+
+```hcl
+module "sre_admin" {
+  source  = "trussworks/sso-group/aws"
+  version = "~> 1.0"
+
+  accounts = [
+    data.aws_caller_identity_current.account_id,
+    var.another_account_id
+  ]
+
+  create_group = false
+
+  group_name = "group-name" # must match the group name that already exists
+
+  permission_set_name = "permission-set-name"
+
+  policy_aws_managed = [
+    "arn:aws:iam::aws:policy/AdministratorAccess"
+  ]
+}
+
+```
+
 <!-- BEGINNING OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
 ## Requirements
 
@@ -114,6 +142,7 @@ No modules.
 | [aws_ssoadmin_permission_set.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ssoadmin_permission_set) | resource |
 | [aws_ssoadmin_permission_set_inline_policy.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ssoadmin_permission_set_inline_policy) | resource |
 | [aws_caller_identity.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
+| [aws_identitystore_group.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/identitystore_group) | data source |
 | [aws_ssoadmin_instances.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/ssoadmin_instances) | data source |
 
 ## Inputs
@@ -121,6 +150,7 @@ No modules.
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | accounts | List of accounts in which the permission set is to be provisioned | `list(string)` | n/a | yes |
+| create\_group | Whether to create a new usergroup. Defaults to true so that updates don't cause issues | `bool` | `true` | no |
 | group\_description | Description of the user group | `string` | `"N/A"` | no |
 | group\_name | The display name of the group being created | `string` | n/a | yes |
 | permission\_set\_description | Description of the permission set | `string` | `"N/A"` | no |
@@ -129,7 +159,7 @@ No modules.
 | policy\_customer\_managed\_name | Name of the policy to attach to permission set | `string` | `""` | no |
 | policy\_customer\_managed\_path | Path of the policy to attach to permission set | `string` | `"/"` | no |
 | policy\_inline | Inline policy in JSON format to attach to permission set | `string` | `""` | no |
-| users | List of users to add to group | `map(string)` | n/a | yes |
+| users | List of users to add to group | `map(string)` | `{}` | no |
 
 ## Outputs
 
