@@ -4,9 +4,9 @@ variable "accounts" {
 }
 
 variable "create_group" {
-  description = "Whether to create a new usergroup. Defaults to false"
+  description = "Whether to create a new usergroup. Defaults to true so that updates don't cause issues"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "group_description" {
