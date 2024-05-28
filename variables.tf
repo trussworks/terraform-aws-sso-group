@@ -3,6 +3,12 @@ variable "accounts" {
   type        = list(string)
 }
 
+variable "create_group" {
+  description = "Whether to create a new usergroup. Defaults to true so that updates don't cause issues"
+  type        = bool
+  default     = true
+}
+
 variable "group_description" {
   description = "Description of the user group"
   type        = string
@@ -52,4 +58,5 @@ variable "policy_inline" {
 variable "users" {
   description = "List of users to add to group"
   type        = map(string)
+  default     = {}
 }
