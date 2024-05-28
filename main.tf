@@ -3,7 +3,22 @@ data "aws_caller_identity" "this" {}
 data "aws_ssoadmin_instances" "this" {}
 
 # Identity Store Group
+data "aws_identitystore_group" "this" {
+  count = var.create_group ? 0 : 1
+
+  identity_store_id = tolist(data.aws_ssoadmin_instances.this.identity_store_ids)[0]
+
+  alternate_identifier {
+    unique_attribute {
+      attribute_path  = "DisplayName"
+      attribute_value = var.group_name
+    }
+  }
+}
+
 resource "aws_identitystore_group" "this" {
+  count = var.create_group ? 1 : 0
+
   display_name      = var.group_name
   description       = var.group_description
   identity_store_id = tolist(data.aws_ssoadmin_instances.this.identity_store_ids)[0]
@@ -51,7 +66,7 @@ resource "aws_identitystore_group_membership" "this" {
   for_each = var.users
 
   identity_store_id = tolist(data.aws_ssoadmin_instances.this.identity_store_ids)[0]
-  group_id          = aws_identitystore_group.this.group_id
+  group_id          = var.create_group ? aws_identitystore_group.this[0].group_id : data.aws_identitystore_group.this[0].group_id
   member_id         = each.value
 }
 
@@ -63,7 +78,7 @@ resource "aws_ssoadmin_account_assignment" "this" {
 
   permission_set_arn = aws_ssoadmin_permission_set.this.arn
 
-  principal_id   = aws_identitystore_group.this.group_id
+  principal_id   = var.create_group ? aws_identitystore_group.this[0].group_id : data.aws_identitystore_group.this[0].group_id
   principal_type = "GROUP"
 
   target_id   = each.key
