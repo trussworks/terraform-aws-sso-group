@@ -29,18 +29,7 @@ variable "policy_aws_managed" {
 variable "policy_customer_managed" {
   description = "List of name, path, and description combinations for customer managed policies to attach"
   type        = list(map(string))
-  default = [
-    {
-      "name"        = "test"
-      "description" = "a test policy"
-      "path"        = "/"
-    },
-    {
-      "name"        = "differentTest"
-      "description" = "a different test policy"
-      "path"        = "/"
-    }
-  ]
+  default     = []
 }
 
 variable "policy_inline" {
