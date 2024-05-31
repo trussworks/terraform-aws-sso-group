@@ -1,11 +1,15 @@
 # Terraform AWS SSO Group
 
-This module provisions AWS IAM Identity Center (formerly AWS Single Sign-On) resources:
+This module provisions AWS IAM Identity Center (formerly AWS Single Sign-On) resources.
 
-- An Identity Store group and group memberships for each user that is specified (the module does not provision users for you)
-  - Alternatively, you may supply your own pre-existing Identity Store group. This is especially useful if you make use of an external IdP such as Okta. In this case, set `create_group = false` but still provide the group_name. You should also omit users to avoid drift from the IdP.
-- A Permission Set with options for inline, AWS-managed, and customer-managed policy attachments to attach to the group
-- Account assignments provisioning the permission set in each specified account
+The main functionality of this module is to dynamically provision permission set and account combinations and attach them to an existing user group.
+
+## V2 Upgrade
+
+- **BREAKING CHANGE**: The default behavior for group creation has changed to not creating the user group
+- **BREAKING CHANGE**: The module no longer supports the use of in-line policy attachments for permission sets.
+- **BREAKING CHANGE**: Customer supplied policies should now be supplied by a single list of maps containing name, path, and optionally description
+- Where version 1 used to provision a single permission set and attach all policies to it, version 2 creates a permission set per policy supplied. The intent is to allow for less verbose terraform when creating multiple permission sets to be attached to a single group.
 
 ## Prerequisites
 
@@ -14,102 +18,33 @@ This module provisions AWS IAM Identity Center (formerly AWS Single Sign-On) res
 
 ## Usage
 
-### Example where you wish to provision users and groups
-
 ```hcl
-data "aws_caller_identity" "current" {}
-
-data "aws_ssoadmin_instances" "this" {}
-
-variable "another_account_id" {
-  description = "ID of another account within the organization"
-  type        = string
-  default     = "000000000000"
-}
-
-variable "users" {
-  description = "users"
-  type        = map(map(string))
-  default = {
-    "John Doe" = {
-      username = "jdoe"
-      email    = "jdoe@example.com"
-    },
-    "John Smith" = {
-      username = "jsmith"
-      email    = "jsmith@example.com"
-    },
-    "Joe Bloggs" = {
-      username = "jbloggs"
-      email    = "jbloggs@example.com"
-    }
-  }
-}
-
-resource "aws_identitystore_user" "user" {
-  for_each = var.users
-
-  identity_store_id = tolist(data.aws_ssoadmin_instances.this.identity_store_ids)[0]
-
-  display_name = each.key
-  user_name    = each.value["username"]
-
-  name {
-    given_name  = split(" ", each.key)[0]
-    family_name = split(" ", each.key)[1]
-  }
-
-  emails {
-    primary = true
-    value   = each.value["email"]
-  }
-}
-
-module "sso_group" {
-  source = "trussworks/sso-group/aws"
-  version = "~> 1.0"
-
-  group_name          = "group-name"
-  permission_set_name = "permission-set-name"
-
-  accounts = [
-    data.aws_caller_identity_current.account_id,
-    var.another_account_id
-  ]
-
-  users = [
-    for user in aws_identitystore_user.user : user.user_name => user.user_id
-  ]
-
-  policy_aws_managed = [
-    "arn:aws:iam::aws:policy/AdministratorAccess"
-  ]
-}
-```
-
-### Example where an external IdP + SCIM handles users and groups
-
-```hcl
-module "sre_admin" {
+module "engineer_permissions" {
   source  = "trussworks/sso-group/aws"
-  version = "~> 1.0"
+  version = "~> 2.0"
 
-  accounts = [
-    data.aws_caller_identity_current.account_id,
-    var.another_account_id
-  ]
+  accounts = var.accounts
 
-  create_group = false
-
-  group_name = "group-name" # must match the group name that already exists
-
-  permission_set_name = "permission-set-name"
+  group_name = "group-name"
 
   policy_aws_managed = [
-    "arn:aws:iam::aws:policy/AdministratorAccess"
+    "arn:aws:iam::aws:policy/AdministratorAccess",
+    "arn:aws:iam::aws:policy/ReadOnlyAccess"
+  ]
+
+  policy_customer_managed = [
+    {
+      "name"        = "EngineerPolicy1"
+      "description" = "Engineer Policy Allowing access to XYZ"
+      "path"        = "/"
+    },
+    {
+      "name"        = "EngineerPolicy2"
+      "description" = "Engineer Policy Allowing access to ABC"
+      "path"        = "/"
+    }
   ]
 }
-
 ```
 
 <!-- BEGINNING OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
@@ -136,11 +71,12 @@ No modules.
 |------|------|
 | [aws_identitystore_group.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/identitystore_group) | resource |
 | [aws_identitystore_group_membership.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/identitystore_group_membership) | resource |
-| [aws_ssoadmin_account_assignment.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ssoadmin_account_assignment) | resource |
-| [aws_ssoadmin_customer_managed_policy_attachment.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ssoadmin_customer_managed_policy_attachment) | resource |
-| [aws_ssoadmin_managed_policy_attachment.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ssoadmin_managed_policy_attachment) | resource |
-| [aws_ssoadmin_permission_set.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ssoadmin_permission_set) | resource |
-| [aws_ssoadmin_permission_set_inline_policy.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ssoadmin_permission_set_inline_policy) | resource |
+| [aws_ssoadmin_account_assignment.aws_managed](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ssoadmin_account_assignment) | resource |
+| [aws_ssoadmin_account_assignment.customer_managed](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ssoadmin_account_assignment) | resource |
+| [aws_ssoadmin_customer_managed_policy_attachment.customer_managed](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ssoadmin_customer_managed_policy_attachment) | resource |
+| [aws_ssoadmin_managed_policy_attachment.aws_managed](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ssoadmin_managed_policy_attachment) | resource |
+| [aws_ssoadmin_permission_set.aws_managed](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ssoadmin_permission_set) | resource |
+| [aws_ssoadmin_permission_set.customer_managed](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ssoadmin_permission_set) | resource |
 | [aws_caller_identity.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
 | [aws_identitystore_group.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/identitystore_group) | data source |
 | [aws_ssoadmin_instances.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/ssoadmin_instances) | data source |
@@ -150,23 +86,17 @@ No modules.
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | accounts | List of accounts in which the permission set is to be provisioned | `list(string)` | n/a | yes |
-| create\_group | Whether to create a new usergroup. Defaults to true so that updates don't cause issues | `bool` | `true` | no |
+| create\_group | Whether to create a new usergroup | `bool` | `false` | no |
 | group\_description | Description of the user group | `string` | `"N/A"` | no |
 | group\_name | The display name of the group being created | `string` | n/a | yes |
-| permission\_set\_description | Description of the permission set | `string` | `"N/A"` | no |
-| permission\_set\_name | Name of the permission set | `string` | n/a | yes |
 | policy\_aws\_managed | List of ARNs of policies to attach to permission set | `list(string)` | `[]` | no |
-| policy\_customer\_managed\_name | Name of the policy to attach to permission set | `string` | `""` | no |
-| policy\_customer\_managed\_path | Path of the policy to attach to permission set | `string` | `"/"` | no |
+| policy\_customer\_managed | List of name, path, and description combinations for customer managed policies to attach | `list(map(string))` | ```[ { "description": "a test policy", "name": "test", "path": "/" }, { "description": "a different test policy", "name": "differentTest", "path": "/" } ]``` | no |
 | policy\_inline | Inline policy in JSON format to attach to permission set | `string` | `""` | no |
 | users | List of users to add to group | `map(string)` | `{}` | no |
 
 ## Outputs
 
-| Name | Description |
-|------|-------------|
-| group\_id | the ID of the identity store group |
-| permission\_set\_arn | the ARN of the permission set |
+No outputs.
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
 
 ## Developer Setup

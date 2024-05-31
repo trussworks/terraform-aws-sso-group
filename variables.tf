@@ -4,9 +4,9 @@ variable "accounts" {
 }
 
 variable "create_group" {
-  description = "Whether to create a new usergroup. Defaults to true so that updates don't cause issues"
+  description = "Whether to create a new usergroup"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "group_description" {
@@ -20,33 +20,27 @@ variable "group_name" {
   type        = string
 }
 
-variable "permission_set_description" {
-  description = "Description of the permission set"
-  type        = string
-  default     = "N/A"
-}
-
-variable "permission_set_name" {
-  description = "Name of the permission set"
-  type        = string
-}
-
 variable "policy_aws_managed" {
   description = "List of ARNs of policies to attach to permission set"
   type        = list(string)
   default     = []
 }
 
-variable "policy_customer_managed_name" {
-  description = "Name of the policy to attach to permission set"
-  type        = string
-  default     = ""
-}
-
-variable "policy_customer_managed_path" {
-  description = "Path of the policy to attach to permission set"
-  type        = string
-  default     = "/"
+variable "policy_customer_managed" {
+  description = "List of name, path, and description combinations for customer managed policies to attach"
+  type        = list(map(string))
+  default = [
+    {
+      "name"        = "test"
+      "description" = "a test policy"
+      "path"        = "/"
+    },
+    {
+      "name"        = "differentTest"
+      "description" = "a different test policy"
+      "path"        = "/"
+    }
+  ]
 }
 
 variable "policy_inline" {
