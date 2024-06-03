@@ -32,12 +32,6 @@ variable "policy_customer_managed" {
   default     = []
 }
 
-variable "policy_inline" {
-  description = "Inline policy in JSON format to attach to permission set"
-  type        = string
-  default     = ""
-}
-
 variable "users" {
   description = "List of users to add to group"
   type        = map(string)

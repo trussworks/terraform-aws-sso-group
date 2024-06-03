@@ -91,7 +91,6 @@ No modules.
 | group\_name | The display name of the group being created | `string` | n/a | yes |
 | policy\_aws\_managed | List of ARNs of policies to attach to permission set | `list(string)` | `[]` | no |
 | policy\_customer\_managed | List of name, path, and description combinations for customer managed policies to attach | `list(map(string))` | `[]` | no |
-| policy\_inline | Inline policy in JSON format to attach to permission set | `string` | `""` | no |
 | users | List of users to add to group | `map(string)` | `{}` | no |
 
 ## Outputs

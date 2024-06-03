@@ -1,17 +1,29 @@
 locals {
-  customer_managed_combinations = flatten([
-    for policy in var.policy_customer_managed : [
-      for account in var.accounts : {
-        name        = policy.name
-        description = policy.description
-        path        = policy.path
-        account     = account
-      }
-    ]
-  ])
+  /**
+  Creates the cartesian product, e.g.
+  accounts = ["XXXXXXXXXXXX", "YYYYYYYYYYYY"]
+  policy_aws_managed = ["AdministratorAccess", "ReadOnlyAccess"]
+  aws_managed_combinations_map = {
+    "XXXXXXXXXXXX_AdministratorAccess" = ["XXXXXXXXXXXX", "AdministratorAccess"],
+    "XXXXXXXXXXXX_ReadOnlyAccess" = ["XXXXXXXXXXXX", "ReadOnlyAccess"],
+    "YYYYYYYYYYYY_AdministratorAccess" = ["YYYYYYYYYYYY", "AdministratorAccess"],
+    "YYYYYYYYYYYY_ReadOnlyAccess" = ["YYYYYYYYYYYY", "ReadOnlyAccess"]
+  }
+  **/
+  aws_managed_combinations_map = {
+    for pair in setproduct(var.accounts, var.policy_aws_managed) : "${pair[0]}_${split("/", pair[1])[1]}" => pair
+  }
 
+  /**
+  Prepares the variable "policy_customer_managed" for use in a for_each by appending the policy name as the object key
+  **/
+  customer_managed_policies = { for index, policy in var.policy_customer_managed : policy.name => policy }
+
+  /**
+  Creates the cartesian product of accounts and customer managed policies similar to aws_managed_combinations_map
+  **/
   customer_managed_combinations_map = {
-    for idx, item in local.customer_managed_combinations : "${item.account}_${item.name}" => item
+    for pair in setproduct(var.accounts, var.policy_customer_managed) : "${pair[0]}_${pair[1].name}" => merge(pair[1], { "account" = pair[0] })
   }
 }
 
@@ -69,9 +81,7 @@ resource "aws_ssoadmin_managed_policy_attachment" "aws_managed" {
 }
 
 resource "aws_ssoadmin_account_assignment" "aws_managed" {
-  for_each = tomap({
-    for pair in setproduct(var.accounts, var.policy_aws_managed) : "${pair[0]}_${split("/", pair[1])[1]}" => pair
-  })
+  for_each = local.aws_managed_combinations_map
 
   instance_arn = tolist(data.aws_ssoadmin_instances.this.arns)[0]
 
@@ -86,20 +96,20 @@ resource "aws_ssoadmin_account_assignment" "aws_managed" {
 
 ## Customer Managed
 resource "aws_ssoadmin_permission_set" "customer_managed" {
-  for_each = local.customer_managed_combinations_map
+  for_each = local.customer_managed_policies
 
-  name         = each.value.name
-  description  = try(each.value.description, each.value.name)
+  name         = each.key
+  description  = try(each.value.description, each.key)
   instance_arn = tolist(data.aws_ssoadmin_instances.this.arns)[0]
 }
 
 resource "aws_ssoadmin_customer_managed_policy_attachment" "customer_managed" {
-  for_each = local.customer_managed_combinations_map
+  for_each = local.customer_managed_policies
 
   instance_arn       = tolist(data.aws_ssoadmin_instances.this.arns)[0]
   permission_set_arn = aws_ssoadmin_permission_set.customer_managed[each.key].arn
   customer_managed_policy_reference {
-    name = each.value.name
+    name = each.key
     path = each.value.path
   }
 }
@@ -109,7 +119,7 @@ resource "aws_ssoadmin_account_assignment" "customer_managed" {
 
   instance_arn = tolist(data.aws_ssoadmin_instances.this.arns)[0]
 
-  permission_set_arn = aws_ssoadmin_permission_set.customer_managed[each.key].arn
+  permission_set_arn = aws_ssoadmin_permission_set.customer_managed[each.value.name].arn
 
   principal_id   = var.create_group ? aws_identitystore_group.this[0].group_id : data.aws_identitystore_group.this[0].group_id
   principal_type = "GROUP"
