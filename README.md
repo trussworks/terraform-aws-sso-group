@@ -32,18 +32,18 @@ module "engineer_permissions" {
     "arn:aws:iam::aws:policy/ReadOnlyAccess"
   ]
 
-  policy_customer_managed = [
-    {
+  policy_customer_managed = {
+    "PermissionSetName1" = {
       "name"        = "EngineerPolicy1"
       "description" = "Engineer Policy Allowing access to XYZ"
       "path"        = "/"
     },
-    {
+    "PermissionSetName2" = {
       "name"        = "EngineerPolicy2"
       "description" = "Engineer Policy Allowing access to ABC"
       "path"        = "/"
     }
-  ]
+  }
 }
 ```
 
@@ -90,7 +90,7 @@ No modules.
 | group\_description | Description of the user group | `string` | `"N/A"` | no |
 | group\_name | The display name of the group being created | `string` | n/a | yes |
 | policy\_aws\_managed | List of ARNs of policies to attach to permission set | `list(string)` | `[]` | no |
-| policy\_customer\_managed | List of name, path, and description combinations for customer managed policies to attach | `list(map(string))` | `[]` | no |
+| policy\_customer\_managed | Map containing the desired permission set names as keys to objects containing the name, path of the policy along with a description of the permission set | ```map(object({ name = string description = string path = string }))``` | `{}` | no |
 | users | List of users to add to group | `map(string)` | `{}` | no |
 
 ## Outputs

@@ -27,9 +27,13 @@ variable "policy_aws_managed" {
 }
 
 variable "policy_customer_managed" {
-  description = "List of name, path, and description combinations for customer managed policies to attach"
-  type        = list(map(string))
-  default     = []
+  description = "Map containing the desired permission set names as keys to objects containing the name, path of the policy along with a description of the permission set"
+  type = map(object({
+    name        = string
+    description = string
+    path        = string
+  }))
+  default = {}
 }
 
 variable "users" {
