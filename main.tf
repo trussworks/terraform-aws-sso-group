@@ -26,9 +26,10 @@ resource "aws_identitystore_group" "this" {
 
 # Permission set
 resource "aws_ssoadmin_permission_set" "this" {
-  name         = var.permission_set_name
-  description  = var.permission_set_description
-  instance_arn = tolist(data.aws_ssoadmin_instances.this.arns)[0]
+  name             = var.permission_set_name
+  description      = var.permission_set_description
+  instance_arn     = tolist(data.aws_ssoadmin_instances.this.arns)[0]
+  session_duration = var.session_duration
 }
 
 # AWS-managed policy attachments

@@ -60,3 +60,9 @@ variable "users" {
   type        = map(string)
   default     = {}
 }
+
+variable "session_duration" {
+  description = "The user session duration in ISO-8601 format"
+  type        = string
+  default     = "PT1H"
+}

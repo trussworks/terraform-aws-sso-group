@@ -159,6 +159,7 @@ No modules.
 | policy\_customer\_managed\_name | Name of the policy to attach to permission set | `string` | `""` | no |
 | policy\_customer\_managed\_path | Path of the policy to attach to permission set | `string` | `"/"` | no |
 | policy\_inline | Inline policy in JSON format to attach to permission set | `string` | `""` | no |
+| session\_duration | The user session duration in ISO-8601 format | `string` | `"PT1H"` | no |
 | users | List of users to add to group | `map(string)` | `{}` | no |
 
 ## Outputs
